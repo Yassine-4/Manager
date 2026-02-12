@@ -145,17 +145,28 @@ document.addEventListener("DOMContentLoaded", loadCompanies);
 
 document.getElementById("companyForm").addEventListener("submit", function(e){
   e.preventDefault();
+
+  // تحويل رقم الهاتف تلقائيًا إلى صيغة دولية +49
+  let phone = document.getElementById("phone").value.trim();
+  if(phone.startsWith("0")){
+    phone = "+49" + phone.slice(1);
+  } else if(!phone.startsWith("+49")){
+    phone = "+49" + phone;
+  }
+
   const company = {
     name: document.getElementById("name").value.trim(),
     city: document.getElementById("city").value.trim(),
     email: document.getElementById("email").value.trim(),
-    phone: document.getElementById("phone").value.trim(),
+    phone: phone,
     status: "Gesendet",
     notes: document.getElementById("notes").value.trim()
   };
+
   let companies = JSON.parse(localStorage.getItem("companies")) || [];
   companies.push(company);
   localStorage.setItem("companies", JSON.stringify(companies));
+
   this.reset();
   loadCompanies();
 });
@@ -213,7 +224,6 @@ function deleteCompany(index){
   localStorage.setItem("companies",JSON.stringify(companies));
   loadCompanies();
 }
-
 </script>
 </body>
 </html>
