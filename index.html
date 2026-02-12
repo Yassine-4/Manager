@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bewerbungs Manager</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#f1f5f9;
+  margin:0;
+  padding:20px;
+}
+
+h1{
+  text-align:center;
+  color:#1e3a8a;
+}
+
+.container{
+  max-width:1100px;
+  margin:auto;
+}
+
+form{
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  margin-bottom:20px;
+}
+
+input, textarea{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+
+button{
+  padding:8px 12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  color:white;
+}
+
+.add-btn{
+  background:#3b82f6;
+}
+
+.add-btn:hover{
+  background:#2563eb;
+}
+
+.delete-btn{
+  background:#ef4444;
+}
+
+.delete-btn:hover{
+  background:#dc2626;
+}
+
+.status-btn{
+  border-radius:20px;
+  padding:5px 12px;
+  font-weight:bold;
+}
+
+.Gesendet{ background:#3b82f6; }
+.Antwort{ background:#10b981; }
+.Einladung{ background:#8b5cf6; }
+.Absage{ background:#ef4444; }
+
+.filters{
+  display:flex;
+  gap:10px;
+  margin:20px 0;
+}
+
+.filters input, .filters select{
+  flex:1;
+  padding:8px;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+th, td{
+  padding:12px;
+  text-align:left;
+  border-bottom:1px solid #ddd;
+}
+
+th{
+  background:#3b82f6;
+  color:white;
+}
+
+.counter{
+  margin-bottom:10px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>📋 Meine Bewerbungen</h1>
+
+<form id="companyForm">
+  <input type="text" id="name" placeholder="Firmenname" required>
+  <input type="text" id="city" placeholder="Stadt">
+  <input type="email" id="email" placeholder="E-Mail">
+  <input type="text" id="phone" placeholder="Telefon">
+  <textarea id="notes" placeholder="Notizen"></textarea>
+  <button type="submit" class="add-btn">Firma hinzufügen</button>
+</form>
+
+<div class="filters">
+  <input type="text" id="searchInput" placeholder="🔎 Firma suchen...">
+  <input type="text" id="cityFilter" placeholder="🏙 Stadt filtern...">
+  <select id="statusFilter">
+    <option value="">Alle Status</option>
+    <option value="Gesendet">Gesendet</option>
+    <option value="Antwort">Antwort</option>
+    <option value="Einladung">Einladung</option>
+    <option value="Absage">Absage</option>
+  </select>
+</div>
+
+<div class="counter" id="counter"></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Firma</th>
+      <th>Stadt</th>
+      <th>E-Mail</th>
+      <th>Telefon</th>
+      <th>Status</th>
+      <th>Notizen</th>
+      <th>Aktion</th>
+    </tr>
+  </thead>
+  <tbody id="companyList"></tbody>
+</table>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", loadCompanies);
+
+const statusOrder = ["Gesendet", "Antwort", "Einladung", "Absage"];
+
+document.getElementById("companyForm").addEventListener("submit", function(e){
+  e.preventDefault();
+
+  const company = {
+    name: document.getElementById("name").value,
+    city: document.getElementById("city").value,
+    email: document.getElementById("email").value,
+    phone: document.getElementById("phone").value,
+    status: "Gesendet",
+    notes: document.getElementById("notes").value
+  };
+
+  let companies = JSON.parse(localStorage.getItem("companies")) || [];
+  companies.push(company);
+  localStorage.setItem("companies", JSON.stringify(companies));
+
+  this.reset();
+  loadCompanies();
+});
+
+document.getElementById("searchInput").addEventListener("keyup", loadCompanies);
+document.getElementById("cityFilter").addEventListener("keyup", loadCompanies);
+document.getElementById("statusFilter").addEventListener("change", loadCompanies);
+
+function loadCompanies(){
+  const searchText = document.getElementById("searchInput").value.toLowerCase();
+  const cityText = document.getElementById("cityFilter").value.toLowerCase();
+  const statusText = document.getElementById("statusFilter").value;
+
+  const list = document.getElementById("companyList");
+  const counter = document.getElementById("counter");
+  list.innerHTML = "";
+
+  let companies = JSON.parse(localStorage.getItem("companies")) || [];
+
+  let filtered = companies.filter(company =>
+    company.name.toLowerCase().includes(searchText) &&
+    company.city.toLowerCase().includes(cityText) &&
+    (statusText === "" || company.status === statusText)
+  );
+
+  counter.innerText = "Gefundene Bewerbungen: " + filtered.length;
+
+  filtered.forEach((company, index)=>{
+    const row = `
+      <tr>
+        <td>${company.name}</td>
+        <td>${company.city}</td>
+        <td>${company.email}</td>
+        <td>${company.phone}</td>
+        <td>
+          <button class="status-btn ${company.status}" onclick="changeStatus(${index})">
+            ${company.status}
+          </button>
+        </td>
+        <td>${company.notes}</td>
+        <td>
+          <button class="delete-btn" onclick="deleteCompany(${index})">
+            Löschen
+          </button>
+        </td>
+      </tr>
+    `;
+    list.innerHTML += row;
+  });
+}
+
+function changeStatus(index){
+  let companies = JSON.parse(localStorage.getItem("companies")) || [];
+  let currentStatus = companies[index].status;
+  let nextIndex = (statusOrder.indexOf(currentStatus) + 1) % statusOrder.length;
+  companies[index].status = statusOrder[nextIndex];
+  localStorage.setItem("companies", JSON.stringify(companies));
+  loadCompanies();
+}
+
+function deleteCompany(index){
+  let companies = JSON.parse(localStorage.getItem("companies")) || [];
+  companies.splice(index,1);
+  localStorage.setItem("companies", JSON.stringify(companies));
+  loadCompanies();
+}
+</script>
+
+</body>
+</html>
