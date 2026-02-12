@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bewerbungs Manager</title>
-
 <style>
 body{
   font-family: Arial, sans-serif;
@@ -12,17 +11,14 @@ body{
   margin:0;
   padding:20px;
 }
-
 h1{
   text-align:center;
   color:#1e3a8a;
 }
-
 .container{
   max-width:1100px;
   margin:auto;
 }
-
 form{
   background:white;
   padding:20px;
@@ -30,7 +26,6 @@ form{
   box-shadow:0 4px 10px rgba(0,0,0,0.1);
   margin-bottom:20px;
 }
-
 input, textarea{
   width:100%;
   padding:10px;
@@ -38,7 +33,6 @@ input, textarea{
   border-radius:6px;
   border:1px solid #ccc;
 }
-
 button{
   padding:8px 12px;
   border:none;
@@ -46,47 +40,38 @@ button{
   cursor:pointer;
   color:white;
 }
-
 .add-btn{
   background:#3b82f6;
 }
-
 .add-btn:hover{
   background:#2563eb;
 }
-
 .delete-btn{
   background:#ef4444;
 }
-
 .delete-btn:hover{
   background:#dc2626;
 }
-
 .status-btn{
   border-radius:20px;
   padding:5px 12px;
   font-weight:bold;
 }
-
 .Gesendet{ background:#3b82f6; }
 .Antwort{ background:#10b981; }
 .Einladung{ background:#8b5cf6; }
 .Absage{ background:#ef4444; }
-
 .filters{
   display:flex;
   gap:10px;
   margin:20px 0;
 }
-
 .filters input, .filters select{
   flex:1;
   padding:8px;
   border-radius:6px;
   border:1px solid #ccc;
 }
-
 table{
   width:100%;
   border-collapse:collapse;
@@ -95,29 +80,23 @@ table{
   overflow:hidden;
   box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
-
 th, td{
   padding:12px;
   text-align:left;
   border-bottom:1px solid #ddd;
 }
-
 th{
   background:#3b82f6;
   color:white;
 }
-
 .counter{
   margin-bottom:10px;
   font-weight:bold;
 }
 </style>
 </head>
-
 <body>
-
 <div class="container">
-
 <h1>📋 Meine Bewerbungen</h1>
 
 <form id="companyForm">
@@ -157,59 +136,50 @@ th{
   </thead>
   <tbody id="companyList"></tbody>
 </table>
-
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", loadCompanies);
+const statusOrder=["Gesendet","Antwort","Einladung","Absage"];
 
-const statusOrder = ["Gesendet", "Antwort", "Einladung", "Absage"];
+document.addEventListener("DOMContentLoaded", loadCompanies);
 
 document.getElementById("companyForm").addEventListener("submit", function(e){
   e.preventDefault();
-
   const company = {
-    name: document.getElementById("name").value,
-    city: document.getElementById("city").value,
-    email: document.getElementById("email").value,
-    phone: document.getElementById("phone").value,
+    name: document.getElementById("name").value.trim(),
+    city: document.getElementById("city").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
     status: "Gesendet",
-    notes: document.getElementById("notes").value
+    notes: document.getElementById("notes").value.trim()
   };
-
   let companies = JSON.parse(localStorage.getItem("companies")) || [];
   companies.push(company);
   localStorage.setItem("companies", JSON.stringify(companies));
-
   this.reset();
   loadCompanies();
 });
 
-document.getElementById("searchInput").addEventListener("keyup", loadCompanies);
-document.getElementById("cityFilter").addEventListener("keyup", loadCompanies);
-document.getElementById("statusFilter").addEventListener("change", loadCompanies);
+["searchInput","cityFilter","statusFilter"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", loadCompanies);
+});
 
 function loadCompanies(){
   const searchText = document.getElementById("searchInput").value.toLowerCase();
   const cityText = document.getElementById("cityFilter").value.toLowerCase();
   const statusText = document.getElementById("statusFilter").value;
-
   const list = document.getElementById("companyList");
   const counter = document.getElementById("counter");
-  list.innerHTML = "";
-
+  list.innerHTML="";
   let companies = JSON.parse(localStorage.getItem("companies")) || [];
+  companies.forEach((company,index)=>{
+    if(
+      !company.name.toLowerCase().includes(searchText) ||
+      !company.city.toLowerCase().includes(cityText) ||
+      (statusText && company.status !== statusText)
+    ) return;
 
-  let filtered = companies.filter(company =>
-    company.name.toLowerCase().includes(searchText) &&
-    company.city.toLowerCase().includes(cityText) &&
-    (statusText === "" || company.status === statusText)
-  );
-
-  counter.innerText = "Gefundene Bewerbungen: " + filtered.length;
-
-  filtered.forEach((company, index)=>{
-    const row = `
+    list.innerHTML+=`
       <tr>
         <td>${company.name}</td>
         <td>${company.city}</td>
@@ -222,32 +192,28 @@ function loadCompanies(){
         </td>
         <td>${company.notes}</td>
         <td>
-          <button class="delete-btn" onclick="deleteCompany(${index})">
-            Löschen
-          </button>
+          <button class="delete-btn" onclick="deleteCompany(${index})">Löschen</button>
         </td>
-      </tr>
-    `;
-    list.innerHTML += row;
+      </tr>`;
   });
+  counter.innerText = "Gefundene Bewerbungen: "+list.children.length;
 }
 
 function changeStatus(index){
   let companies = JSON.parse(localStorage.getItem("companies")) || [];
-  let currentStatus = companies[index].status;
-  let nextIndex = (statusOrder.indexOf(currentStatus) + 1) % statusOrder.length;
+  let nextIndex = (statusOrder.indexOf(companies[index].status)+1)%statusOrder.length;
   companies[index].status = statusOrder[nextIndex];
-  localStorage.setItem("companies", JSON.stringify(companies));
+  localStorage.setItem("companies",JSON.stringify(companies));
   loadCompanies();
 }
 
 function deleteCompany(index){
   let companies = JSON.parse(localStorage.getItem("companies")) || [];
   companies.splice(index,1);
-  localStorage.setItem("companies", JSON.stringify(companies));
+  localStorage.setItem("companies",JSON.stringify(companies));
   loadCompanies();
 }
-</script>
 
+</script>
 </body>
 </html>
